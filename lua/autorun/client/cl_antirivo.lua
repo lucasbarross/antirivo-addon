@@ -59,28 +59,3 @@ end
 
 net.Receive("Antirivo.UserToken", DrawGUI)
 net.Receive("Antirivo.Success", Success)
-
-
--- */
--- 	// w = 400
--- 	// h = 30
--- 	// x = ScrW() - ScrW() * 0.5 - 200 
--- 	// y = 150
--- 	// ScrW() = 1900 !!! Your Screen width
--- 	// ScrH() = 1080 !!! Your Screen height
--- 	// x = 1900 - 1900 * 0.5 - 200 = 750
--- 	// 60 / 1900 ~= 0.0315
--- 	// 50 / 1080 = 0.0462
-
--- 	// Now you have dynamic X and Y coords ..
--- 	--surface.SetDrawColor(0,0,0,255)
--- 	--surface.DrawRect( 0.395 * ScrW(), ScrH() * 0.125, 400, 30 )
--- 	--surface.SetDrawColor(0,255,0,255)
--- 	--surface.DrawOutlinedRect(  0.395 * ScrW(), ScrH() * 0.125, 400, 30 )
--- 	// You want dynamic W/H values too ?
--- 	/*
--- 	 w = 400 / 1900 ~= 0.211
--- 	 h = 30 / 1080 = 0.025
--- 	 x = ScrW() - 0.5 * ScrW() - ScrW() * 0.1055  << == 0.211 * 0.5
--- 	 y = 0.125
--- 	*/
