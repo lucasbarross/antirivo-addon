@@ -22,7 +22,7 @@ local function GetServerUUID()
     return uuid
 end
 
-local function RoundOver()
+local function OneAlive()
     for k, p in pairs(players.GetAll()) do
         if p:Alive() then
             counter = counter + 1
@@ -36,7 +36,7 @@ local SERVER_UUID = GetServerUUID()
 
 local function MuteUser(ply)
     
-    if RoundOver() then return end
+    if OneAlive() then return end
 
     local steamID = ply:SteamID()
     local token = playersConnected[steamID]
@@ -89,7 +89,6 @@ local function FetchToken(ply)
             else
                 net.Start("Antirivo.Success")
                 playersConnected[steamID] = body.response.token
-                print(playersConnected[steamID])
                 net.Send(ply)
             end
         end,
@@ -137,7 +136,7 @@ local function MoveUserAlive()
 end
 
 local function MoveUserDead(ply, deadply)
-    if not RoundOver() then
+    if not OneAlive() then
         MoveUser('dead', deadply)
     end
 end
