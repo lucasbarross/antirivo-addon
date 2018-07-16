@@ -1,5 +1,6 @@
 local playersConnected = {}
 local PERSISTENT_UUID_KEY = "Antirivo.GetServerUUID"
+local roundOver = false
 
 util.AddNetworkString( "Antirivo.UserToken" )
 util.AddNetworkString( "Antirivo.CheckRegistered" )
@@ -22,21 +23,15 @@ local function GetServerUUID()
     return uuid
 end
 
-local function OneAlive()
-    for k, p in pairs(players.GetAll()) do
-        if p:Alive() then
-            counter = counter + 1
-        end
-    end
-
-    return not counter > 1
-end
-
 local SERVER_UUID = GetServerUUID()
 
 local function MuteUser(ply)
+    if ply:SteamID() == "STEAM_0:0:0" then return end
     
-    if OneAlive() then return end
+    if roundOver then 
+        print("round over mute")
+        return 
+    end
 
     local steamID = ply:SteamID()
     local token = playersConnected[steamID]
@@ -99,7 +94,7 @@ local function FetchToken(ply)
 end
 
 local function CheckToken( ply )
-    if steamID == "STEAM_0:0:0" then return end
+    if ply:SteamID() == "STEAM_0:0:0" then return end
     FetchToken(ply)
 end
 
@@ -132,13 +127,20 @@ local function MoveUser(channel, ply)
 end
 
 local function MoveUserAlive()
+    roundOver = true
     MoveUser('alive', 'all')
 end
 
 local function MoveUserDead(ply, deadply)
-    if not OneAlive() then
+    print("hook")
+    if not roundOver then
+        print("moved")
         MoveUser('dead', deadply)
     end
+end
+
+local function ResetRoundOver()
+    roundOver = false
 end
 
 net.Receive("Antirivo.CheckRegistered", CheckRegistered)
@@ -146,3 +148,4 @@ hook.Add( "PlayerInitialSpawn", PERSISTENT_UUID_KEY, CheckToken )
 hook.Add( "PostPlayerDeath", "Antirivo.PlayerDeath", MuteUser )
 hook.Add( "TTTBodyFound", "Antirivo.BodyFound", MoveUserDead )
 hook.Add( "TTTEndRound", "Antirivo.EndRound", MoveUserAlive )
+hook.Add( "TTTBeginRound", "Antirivo.BeginRound", ResetRoundOver )
