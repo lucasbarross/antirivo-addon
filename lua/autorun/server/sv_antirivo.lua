@@ -1,15 +1,9 @@
-Antirivo_playersConnected = {}
+local playersConnected = {}
 local PERSISTENT_UUID_KEY = "Antirivo.GetServerUUID"
 
 util.AddNetworkString( "Antirivo.UserToken" )
 util.AddNetworkString( "Antirivo.CheckRegistered" )
 util.AddNetworkString( "Antirivo.Success" )
-
-local function Teste(ply, message)
-    for k, ply in pairs( player.GetAll() ) do
-        ply:ChatPrint( message or "hello world" )
-    end
-end
 
 local function GenerateUUID()
     local bytes = {}
@@ -28,6 +22,34 @@ local function GetServerUUID()
     return uuid
 end
 
+local function RoundOver()
+    for k, p in pairs(players.GetAll()) do
+        if p:Alive() then
+            counter = counter + 1
+        end
+    end
+
+    return not counter > 1
+end
+
+local SERVER_UUID = GetServerUUID()
+
+local function MuteUser(ply)
+    
+    if RoundOver() then return end
+
+    local steamID = ply:SteamID()
+    local token = playersConnected[steamID]
+    if ply:IsConnected() then
+        http.Post( "https://antirivo.herokuapp.com/mute/" .. steamID .. "/" .. SERVER_UUID .. "?token=" .. token, {},
+            function( result )
+            end,
+            function( error )
+            end
+        )
+    end
+end
+
 local function ShowUserToken(ply, token)
     net.Start("Antirivo.UserToken")
     net.WriteString(token)
@@ -36,9 +58,8 @@ local function ShowUserToken(ply, token)
 end
 
 local function GenerateNewPlayerToken(ply)
-    local serverUUID = GetServerUUID()
     local steamID = ply:SteamID()
-    http.Post( "https://antirivo.herokuapp.com/token/" .. steamID .. "/" .. serverUUID, {},
+    http.Post( "https://antirivo.herokuapp.com/token/" .. steamID .. "/" .. SERVER_UUID, {},
         function( result )
             result = util.JSONToTable(result)
             if result.response.status == "Error" then
@@ -49,10 +70,11 @@ local function GenerateNewPlayerToken(ply)
             end
         end,
         function( error )
-            -- We failed. =(
+            ply:Kick("There's an error with the Antirivo-TTT addon.")
         end
     )
 end
+
 
 local function FetchToken(ply)
     local steamID = ply:SteamID()
@@ -66,11 +88,13 @@ local function FetchToken(ply)
                 ShowUserToken(ply, body.response.token)
             else
                 net.Start("Antirivo.Success")
+                playersConnected[steamID] = body.response.token
+                print(playersConnected[steamID])
                 net.Send(ply)
             end
         end,
         function( error )
-            -- We failed. =(
+            ply:Kick("There's an error with the Antirivo-TTT addon.")
         end
     )
 end
@@ -85,6 +109,41 @@ local function CheckRegistered()
     FetchToken(ply)
 end
 
+local function MoveUser(channel, ply)
+    tokens = {}
+    if ply == 'all' then
+        for key, value in pairs(playersConnected) do
+            tokens[#tokens+1] = value
+        end
+    else
+        tokens[#tokens+1] = playersConnected[ply:SteamID()]
+    end
+    
+    tokens = util.TableToJSON(tokens)
+    
+    local body = {}
+    body['tokens'] = tokens
+
+    http.Post( "https://antirivo.herokuapp.com/move/" .. SERVER_UUID .. "?channel=" .. channel, body,
+        function( result )
+        end,
+        function( error )
+        end
+    )
+end
+
+local function MoveUserAlive()
+    MoveUser('alive', 'all')
+end
+
+local function MoveUserDead(ply, deadply)
+    if not RoundOver() then
+        MoveUser('dead', deadply)
+    end
+end
+
 net.Receive("Antirivo.CheckRegistered", CheckRegistered)
 hook.Add( "PlayerInitialSpawn", PERSISTENT_UUID_KEY, CheckToken )
-hook.Add( "PostPlayerDeath", "antirivo_test", teste )
+hook.Add( "PostPlayerDeath", "Antirivo.PlayerDeath", MuteUser )
+hook.Add( "TTTBodyFound", "Antirivo.BodyFound", MoveUserDead )
+hook.Add( "TTTEndRound", "Antirivo.EndRound", MoveUserAlive )
