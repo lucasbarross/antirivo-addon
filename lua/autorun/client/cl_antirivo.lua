@@ -12,7 +12,7 @@ end
 
 local function checkRegistered(ply, frame)
     net.Start("Antirivo.CheckRegistered")
-    net.WriteEntity(ply)
+    net.WriteEntity(LocalPlayer())
     net.SendToServer()
     frame:Close()
 end
